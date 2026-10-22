@@ -1,0 +1,97 @@
+{
+  "capability": "parse-mpesa-statement",
+  "request": {
+    "method": "POST",
+    "path": "/v1/parse/mpesa-statement",
+    "body": {
+      "text": "M-PESA STATEMENT\nCustomer Name: AMANI TEST USER\nMobile Number: 0700 000 000\nStatement Period: 01 Sep 2026 - 30 Sep 2026\nRequest Date: 01 Oct 2026\nReceipt No. Completion Time Details Transaction Status Paid In Withdrawn Balance\nTJ5AAA0005 2026-09-06 18:45:00 Customer Transfer to 0700***001 - TEST RECIPIENT COMPLETED -1,200.00 4,949.50\nTJ4AAA0004 2026-09-05 08:30:00 Business Payment from 000222 - SAMPLE EMPLOYER LTD COMPLETED 5,000.00 6,149.50\nTJ3AAA0003 2026-09-03 13:15:00 Merchant Payment to 000111 - SAMPLE SUPERMARKET COMPLETED -350.50 1,149.50\nTJ2AAA0002 2026-09-02 10:00:00 Pay Bill to 000000 - SAMPLE POWER CO COMPLETED -500.00 1,500.00\nTJ1AAA0001 2026-09-01 09:00:00 Funds received from 0700***000 - SAMPLE SENDER COMPLETED 2,000.00 2,000.00"
+    },
+    "url": "https://mpesa-kra-parser.vercel.app/v1/parse/mpesa-statement"
+  },
+  "response": {
+    "document_type": "mpesa_statement",
+    "currency": "KES",
+    "pages": 1,
+    "customer_name": {
+      "value": "AMANI TEST USER",
+      "confidence": 0.95
+    },
+    "mobile_number": {
+      "value": "0700 000 000",
+      "confidence": 0.95
+    },
+    "statement_period": {
+      "value": {
+        "start": "2026-09-01",
+        "end": "2026-09-30"
+      },
+      "confidence": 0.95
+    },
+    "request_date": {
+      "value": "2026-10-01",
+      "confidence": 0.95
+    },
+    "transactions": [
+      {
+        "receipt_no": "TJ5AAA0005",
+        "completed_at": "2026-09-06T18:45:00+03:00",
+        "details": "Customer Transfer to 0700***001 - TEST RECIPIENT",
+        "status": "COMPLETED",
+        "paid_in": 0,
+        "withdrawn": 1200,
+        "balance": 4949.5,
+        "confidence": 0.99
+      },
+      {
+        "receipt_no": "TJ4AAA0004",
+        "completed_at": "2026-09-05T08:30:00+03:00",
+        "details": "Business Payment from 000222 - SAMPLE EMPLOYER LTD",
+        "status": "COMPLETED",
+        "paid_in": 5000,
+        "withdrawn": 0,
+        "balance": 6149.5,
+        "confidence": 0.99
+      },
+      {
+        "receipt_no": "TJ3AAA0003",
+        "completed_at": "2026-09-03T13:15:00+03:00",
+        "details": "Merchant Payment to 000111 - SAMPLE SUPERMARKET",
+        "status": "COMPLETED",
+        "paid_in": 0,
+        "withdrawn": 350.5,
+        "balance": 1149.5,
+        "confidence": 0.99
+      },
+      {
+        "receipt_no": "TJ2AAA0002",
+        "completed_at": "2026-09-02T10:00:00+03:00",
+        "details": "Pay Bill to 000000 - SAMPLE POWER CO",
+        "status": "COMPLETED",
+        "paid_in": 0,
+        "withdrawn": 500,
+        "balance": 1500,
+        "confidence": 0.99
+      },
+      {
+        "receipt_no": "TJ1AAA0001",
+        "completed_at": "2026-09-01T09:00:00+03:00",
+        "details": "Funds received from 0700***000 - SAMPLE SENDER",
+        "status": "COMPLETED",
+        "paid_in": 2000,
+        "withdrawn": 0,
+        "balance": 2000,
+        "confidence": 0.8
+      }
+    ],
+    "totals": {
+      "paid_in": 7000,
+      "withdrawn": 2050.5,
+      "transaction_count": 5
+    },
+    "checks": {
+      "balance_reconciled_rows": 4,
+      "balance_checked_rows": 4
+    },
+    "warnings": []
+  }
+}

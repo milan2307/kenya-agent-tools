@@ -1,0 +1,45 @@
+{
+  "name": "kenya-agent-tools",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "tsx watch src/local-server.ts",
+    "start": "tsx src/local-server.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "fixtures": "tsx test/fixtures/generate.ts",
+    "probe:testnet": "tsx scripts/probe-testnet.ts",
+    "postinstall": "node scripts/cap-pdf-decoded-streams.mjs",
+    "fx:snapshot": "tsx scripts/fx-snapshot.ts",
+    "lax:artifacts": "tsx scripts/build-lax-artifacts.ts"
+  },
+  "license": "UNLICENSED",
+  "description": "Pay-per-call (x402, USDC on Base) API that turns M-Pesa statements and KRA eTIMS invoices into validated JSON. Files are processed in memory and never stored.",
+  "dependencies": {
+    "@coinbase/cdp-sdk": "^1.58.0",
+    "@hono/node-server": "^2.1.5",
+    "@x402/core": "^2.28.0",
+    "@x402/evm": "^2.28.0",
+    "@x402/extensions": "^2.28.0",
+    "@x402/hono": "^2.28.0",
+    "@x402/svm": "^2.28.0",
+    "hono": "^4.13.13",
+    "unpdf": "1.8.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/pdfkit": "^0.17.6",
+    "@x402/fetch": "^2.28.0",
+    "ajv": "^8.20.0",
+    "pdfkit": "^0.20.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "viem": "^2.57.7",
+    "vitest": "^5.0.4"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  }
+}

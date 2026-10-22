@@ -1,0 +1,49 @@
+{
+  "capability": "kes-fx-convert",
+  "request": {
+    "method": "GET",
+    "path": "/v1/fx/convert",
+    "query": {
+      "amount": "250",
+      "from": "USD",
+      "to": "KES",
+      "date": "2026-10-09"
+    },
+    "url": "https://mpesa-kra-parser.vercel.app/v1/fx/convert"
+  },
+  "response": {
+    "amount": 250,
+    "from": "USD",
+    "to": "KES",
+    "requested_date": "2026-10-09",
+    "date_defaulted_to_today": false,
+    "result": 32477.5,
+    "is_fallback": false,
+    "legs": {
+      "from": {
+        "currency": "USD",
+        "kes_per_unit": 129.91,
+        "rate_date": "2026-10-09",
+        "is_fallback": false
+      },
+      "to": {
+        "currency": "KES",
+        "kes_per_unit": 1,
+        "rate_date": null,
+        "is_fallback": false
+      }
+    },
+    "method": "amount x (KES per 1 from) / (KES per 1 to), using CBK mean rates; cross rates go through KES",
+    "freshness": {
+      "snapshot_last_date": "2026-10-15",
+      "live_check": "not_needed"
+    },
+    "source": {
+      "publisher": "Central Bank of Kenya (CBK)",
+      "dataset": "CBK indicative exchange rates against the Kenya shilling, published each business day",
+      "url": "https://www.centralbank.go.ke/rates/forex-exchange-rates/",
+      "note": "buy and sell are published up to 2024-01-04; from 2024-01-05 CBK publishes the mean only (buy/sell are null).",
+      "disclaimer": "Not affiliated with or endorsed by CBK. Indicative reference rates, not dealing rates. CBK gives no warranty of accuracy."
+    }
+  }
+}

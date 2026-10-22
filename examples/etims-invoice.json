@@ -1,0 +1,75 @@
+{
+  "capability": "parse-etims-invoice",
+  "request": {
+    "method": "POST",
+    "path": "/v1/parse/etims-invoice",
+    "body": {
+      "text": "SAMPLE TRADERS LTD\nTAX INVOICE\nSeller PIN: P000000000A\nBuyer Name: EXAMPLE BUYER LTD\nBuyer PIN: A000000000B\nInvoice No: INV-0001\nDate: 14/10/2026\nDescription Qty Unit Price Amount Tax\nSample item 2 500.00 1,000.00 B\nTaxable Amount: 1,000.00\nVAT 16%: 160.00\nTotal: 1,160.00\nSCU ID: KRACU0000000001\nCU Invoice No: KRACU0000000001/1"
+    },
+    "url": "https://mpesa-kra-parser.vercel.app/v1/parse/etims-invoice"
+  },
+  "response": {
+    "document_type": "etims_invoice",
+    "currency": "KES",
+    "pages": 1,
+    "seller_name": {
+      "value": "SAMPLE TRADERS LTD",
+      "confidence": 0.5
+    },
+    "seller_pin": {
+      "value": "P000000000A",
+      "confidence": 0.97
+    },
+    "buyer_name": {
+      "value": "EXAMPLE BUYER LTD",
+      "confidence": 0.9
+    },
+    "buyer_pin": {
+      "value": "A000000000B",
+      "confidence": 0.95
+    },
+    "invoice_number": {
+      "value": "INV-0001",
+      "confidence": 0.9
+    },
+    "invoice_date": {
+      "value": "2026-10-14",
+      "confidence": 0.9
+    },
+    "cu_serial_number": {
+      "value": "KRACU0000000001",
+      "confidence": 0.95
+    },
+    "cu_invoice_number": {
+      "value": "KRACU0000000001/1",
+      "confidence": 0.95
+    },
+    "items": [
+      {
+        "description": "Sample item",
+        "quantity": 2,
+        "unit_price": 500,
+        "amount": 1000,
+        "tax_code": "B"
+      }
+    ],
+    "taxable_amount": {
+      "value": 1000,
+      "confidence": 0.97
+    },
+    "vat_amount": {
+      "value": 160,
+      "confidence": 0.97
+    },
+    "total_amount": {
+      "value": 1160,
+      "confidence": 0.97
+    },
+    "checks": {
+      "vat_is_16_percent": true,
+      "items_sum_matches": true,
+      "totals_add_up": true
+    },
+    "warnings": []
+  }
+}

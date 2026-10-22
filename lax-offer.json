@@ -1,0 +1,1073 @@
+{
+  "lax_version": "1.0",
+  "name": "Kenya Agent Tools (LamuLabs)",
+  "description": "Pay per call tools for agents that handle Kenyan money: parses Safaricom M-PESA statements and KRA eTIMS invoices into checked JSON, and serves official Central Bank of Kenya KES exchange rates and conversions back to 2004. Files are processed in memory and never stored. Failed calls are not charged.",
+  "category": "Finance data",
+  "agent_did": "did:web:mpesa-kra-parser.vercel.app",
+  "endpoint": "https://mpesa-kra-parser.vercel.app/",
+  "capabilities": [
+    {
+      "skill_id": "parse-mpesa-statement",
+      "description": "POST /v1/parse/mpesa-statement: M-PESA full statement (PDF or text) to JSON: every transaction, totals and a running balance check.",
+      "pricing": {
+        "model": "per_call",
+        "amount": "0.10",
+        "currency": "USDC",
+        "rail": "x402"
+      },
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_base64": {
+            "type": "string",
+            "description": "Base64 of a text-based PDF or UTF-8 text file, max 3 MB decoded"
+          },
+          "text": {
+            "type": "string",
+            "description": "Already-extracted document text, max 300,000 characters"
+          },
+          "password": {
+            "type": "string",
+            "description": "Password for an encrypted PDF; used in memory only"
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "document_type": {
+            "const": "mpesa_statement"
+          },
+          "currency": {
+            "const": "KES"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "customer_name": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "mobile_number": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "statement_period": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string"
+                      },
+                      "end": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "start",
+                      "end"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "request_date": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "receipt_no": {
+                  "type": "string"
+                },
+                "completed_at": {
+                  "type": "string",
+                  "description": "ISO 8601 with +03:00 (EAT)"
+                },
+                "details": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "paid_in": {
+                  "type": "number"
+                },
+                "withdrawn": {
+                  "type": "number"
+                },
+                "balance": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "receipt_no",
+                "completed_at",
+                "details",
+                "status",
+                "paid_in",
+                "withdrawn",
+                "balance",
+                "confidence"
+              ]
+            }
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "paid_in": {
+                "type": "number"
+              },
+              "withdrawn": {
+                "type": "number"
+              },
+              "transaction_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "paid_in",
+              "withdrawn",
+              "transaction_count"
+            ]
+          },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "balance_reconciled_rows": {
+                "type": "integer"
+              },
+              "balance_checked_rows": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "balance_reconciled_rows",
+              "balance_checked_rows"
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "document_type",
+          "currency",
+          "pages",
+          "customer_name",
+          "mobile_number",
+          "statement_period",
+          "request_date",
+          "transactions",
+          "totals",
+          "checks",
+          "warnings"
+        ]
+      }
+    },
+    {
+      "skill_id": "parse-etims-invoice",
+      "description": "POST /v1/parse/etims-invoice: KRA eTIMS tax invoice (PDF or text) to JSON: PINs, CU numbers, line items, VAT and total checks.",
+      "pricing": {
+        "model": "per_call",
+        "amount": "0.05",
+        "currency": "USDC",
+        "rail": "x402"
+      },
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file_base64": {
+            "type": "string",
+            "description": "Base64 of a text-based PDF or UTF-8 text file, max 3 MB decoded"
+          },
+          "text": {
+            "type": "string",
+            "description": "Already-extracted document text, max 300,000 characters"
+          },
+          "password": {
+            "type": "string",
+            "description": "Password for an encrypted PDF; used in memory only"
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "document_type": {
+            "const": "etims_invoice"
+          },
+          "currency": {
+            "const": "KES"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "seller_name": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "seller_pin": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "buyer_name": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "buyer_pin": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "invoice_number": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "invoice_date": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "cu_serial_number": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "cu_invoice_number": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "unit_price": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "tax_code": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "description",
+                "quantity",
+                "unit_price",
+                "amount",
+                "tax_code"
+              ]
+            }
+          },
+          "taxable_amount": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "vat_amount": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "total_amount": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "value",
+              "confidence"
+            ]
+          },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "vat_is_16_percent": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "items_sum_matches": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "totals_add_up": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "vat_is_16_percent",
+              "items_sum_matches",
+              "totals_add_up"
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "document_type",
+          "currency",
+          "pages",
+          "seller_name",
+          "seller_pin",
+          "buyer_name",
+          "buyer_pin",
+          "invoice_number",
+          "invoice_date",
+          "cu_serial_number",
+          "cu_invoice_number",
+          "items",
+          "taxable_amount",
+          "vat_amount",
+          "total_amount",
+          "checks",
+          "warnings"
+        ]
+      }
+    },
+    {
+      "skill_id": "kes-fx-rates",
+      "description": "GET /v1/fx/kes: Official CBK Kenya shilling rates for up to 21 currencies, latest or any date since 2004-11-02.",
+      "pricing": {
+        "model": "per_call",
+        "amount": "0.003",
+        "currency": "USDC",
+        "rail": "x402"
+      },
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "One or more ISO codes, comma-separated: USD, GBP, EUR, ZAR, UGX, TZS, RWF, BIF, AED, CAD, CHF, JPY, SEK, NOK, DKK, INR, HKD, SGD, SAR, CNY, AUD. Omit for all 21"
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD (Nairobi). Omit for the latest. Weekends/holidays return the last published rate with is_fallback=true"
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "const": "KES"
+          },
+          "requested_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "date_defaulted_to_today": {
+            "type": "boolean"
+          },
+          "rates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "rate_date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "is_fallback": {
+                  "type": "boolean"
+                },
+                "fallback_reason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "quote": {
+                  "type": "string"
+                },
+                "mean": {
+                  "type": "number"
+                },
+                "buy": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sell": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "kes_per_unit": {
+                  "type": "number"
+                },
+                "units_per_kes": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "currency",
+                "name",
+                "rate_date",
+                "is_fallback",
+                "fallback_reason",
+                "quote",
+                "mean",
+                "buy",
+                "sell",
+                "kes_per_unit",
+                "units_per_kes"
+              ]
+            }
+          },
+          "freshness": {
+            "type": "object",
+            "properties": {
+              "snapshot_last_date": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "live_check": {
+                "enum": [
+                  "not_needed",
+                  "fetched",
+                  "cached",
+                  "failed"
+                ]
+              }
+            },
+            "required": [
+              "snapshot_last_date",
+              "live_check"
+            ]
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "publisher": {
+                "type": "string"
+              },
+              "dataset": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              },
+              "disclaimer": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "publisher",
+              "dataset",
+              "url",
+              "note",
+              "disclaimer"
+            ]
+          }
+        },
+        "required": [
+          "base",
+          "requested_date",
+          "date_defaulted_to_today",
+          "rates",
+          "freshness",
+          "source"
+        ]
+      }
+    },
+    {
+      "skill_id": "kes-fx-convert",
+      "description": "GET /v1/fx/convert: Convert an amount between KES and 21 currencies at the CBK mean rate for a date.",
+      "pricing": {
+        "model": "per_call",
+        "amount": "0.003",
+        "currency": "USDC",
+        "rail": "x402"
+      },
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Positive decimal, e.g. 1500 or 99.95"
+          },
+          "from": {
+            "type": "string",
+            "description": "KES or USD, GBP, EUR, ZAR, UGX, TZS, RWF, BIF, AED, CAD, CHF, JPY, SEK, NOK, DKK, INR, HKD, SGD, SAR, CNY, AUD"
+          },
+          "to": {
+            "type": "string",
+            "description": "KES or USD, GBP, EUR, ZAR, UGX, TZS, RWF, BIF, AED, CAD, CHF, JPY, SEK, NOK, DKK, INR, HKD, SGD, SAR, CNY, AUD"
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD (Nairobi). Omit for the latest. Weekends/holidays return the last published rate with is_fallback=true"
+          }
+        },
+        "required": [
+          "amount",
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "requested_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "date_defaulted_to_today": {
+            "type": "boolean"
+          },
+          "result": {
+            "type": "number"
+          },
+          "is_fallback": {
+            "type": "boolean"
+          },
+          "legs": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "object",
+                "properties": {
+                  "currency": {
+                    "type": "string"
+                  },
+                  "kes_per_unit": {
+                    "type": "number"
+                  },
+                  "rate_date": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "is_fallback": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "currency",
+                  "kes_per_unit",
+                  "rate_date",
+                  "is_fallback"
+                ]
+              },
+              "to": {
+                "type": "object",
+                "properties": {
+                  "currency": {
+                    "type": "string"
+                  },
+                  "kes_per_unit": {
+                    "type": "number"
+                  },
+                  "rate_date": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "is_fallback": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "currency",
+                  "kes_per_unit",
+                  "rate_date",
+                  "is_fallback"
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "freshness": {
+            "type": "object",
+            "properties": {
+              "snapshot_last_date": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "live_check": {
+                "enum": [
+                  "not_needed",
+                  "fetched",
+                  "cached",
+                  "failed"
+                ]
+              }
+            },
+            "required": [
+              "snapshot_last_date",
+              "live_check"
+            ]
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "publisher": {
+                "type": "string"
+              },
+              "dataset": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              },
+              "disclaimer": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "publisher",
+              "dataset",
+              "url",
+              "note",
+              "disclaimer"
+            ]
+          }
+        },
+        "required": [
+          "amount",
+          "from",
+          "to",
+          "requested_date",
+          "date_defaulted_to_today",
+          "result",
+          "is_fallback",
+          "legs",
+          "method",
+          "freshness",
+          "source"
+        ]
+      }
+    }
+  ],
+  "constitutional_constraints": [
+    "Solidarity Oath",
+    "Renewal Mandate",
+    "Treasury Equilibrium",
+    "Harm Shield",
+    "Transparency Covenant"
+  ],
+  "payment_rails": [
+    "x402",
+    "usdc-base"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/index.ts": { "maxDuration": 15, "includeFiles": "data/cbk-kes-rates.json" }
+  }
+}
