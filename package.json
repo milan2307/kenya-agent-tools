@@ -12,7 +12,7 @@
     "fx:snapshot": "tsx scripts/fx-snapshot.ts",
     "lax:artifacts": "tsx scripts/build-lax-artifacts.ts"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "description": "Pay-per-call (x402, USDC on Base) API that turns M-Pesa statements and KRA eTIMS invoices into validated JSON. Files are processed in memory and never stored.",
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.58.0",
@@ -41,5 +41,10 @@
   "type": "module",
   "engines": {
     "node": ">=22"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/milan2307/kenya-agent-tools.git"
+  },
+  "homepage": "https://github.com/milan2307/kenya-agent-tools"
 }

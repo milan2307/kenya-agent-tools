@@ -8,6 +8,7 @@ conversions back to 2004. Every call is paid per call in USDC on Base over x402.
 - **LAX listing id:** pending (added after the listing is paid and accepted)
 - **Agent DID:** `did:web:mpesa-kra-parser.vercel.app` (document at `/.well-known/did.json`)
 - **LAX offer:** [`lax-offer.json`](lax-offer.json), also served at `/.well-known/lax-offer.json`
+- **Source:** https://github.com/milan2307/kenya-agent-tools
 - **AIAX manifest:** `/.well-known/aiax.json`, sections at `/aiax/sections/<skill_id>.json`
 
 ## Price per call
@@ -82,3 +83,7 @@ endorsed by CBK; indicative reference rates, not dealing rates. Every FX answer 
 ## Security
 
 See [SECURITY.md](SECURITY.md) for the attack pass on every route.
+
+## Licence
+
+MIT, copyright 2026 LamuLabs. See [LICENSE](LICENSE).
