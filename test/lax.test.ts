@@ -43,6 +43,10 @@ describe("A1 the offer passes LAX validation on our own domain, with the Five La
     expect(valid).toBe(true);
   });
 
+  it("A1 the offer fits the LAX 16 KB limit when sent as compact JSON", () => {
+    expect(Buffer.byteLength(JSON.stringify(offerFile))).toBeLessThan(16 * 1024);
+  });
+
   it("A1 declares all Five Laws, an https endpoint not on kognai.ai, and a did:web for that host", () => {
     expect(offerFile.constitutional_constraints).toEqual(expect.arrayContaining([...FIVE_LAWS]));
     const endpoint = new URL(offerFile.endpoint);
