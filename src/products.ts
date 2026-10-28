@@ -233,6 +233,16 @@ export function catalogue(config: AppConfig) {
   return {
     name: "Kenya agent tools: M-Pesa & KRA document parser, CBK KES exchange rates",
     payment: { protocol: "x402", scheme: "exact", asset: "USDC", network: config.network },
+    ...(config.sui
+      ? {
+          payment_alternatives: [{
+            protocol: "x402", scheme: "exact", network: config.sui.network, asset: config.sui.asset, pay_to: config.sui.payTo,
+            routes: [FX_PRODUCTS.rate.path, FX_PRODUCTS.convert.path],
+            note: "Sui option for the FX routes: send a PAYMENT-SIGNATURE whose accepted.network is the Sui network. Non-custodial: you sign a transaction that pays pay_to directly; the facilitator only relays it.",
+            facilitator: config.sui.facilitatorUrl,
+          }],
+        }
+      : {}),
     privacy: "Uploaded files are processed in memory and never stored or logged.",
     routes: ALL_PAID.map((p) => ({ method: p.method, path: p.path, price: p.price, description: p.description, input_schema: p.inputSchema })),
     errors: {

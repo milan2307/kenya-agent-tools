@@ -1,0 +1,60 @@
+{
+  "ranAt": "2026-10-28T04:23:26.542Z",
+  "network": "sui:testnet",
+  "payer": "0x28a6153cd5733a22303bbd2638f2d76bf1cec63c8ed487626340a90e981575ec",
+  "payTo": "0xc710d9e0cf28b1aa6fd13a2470997345ff246563f587113e59d113313d7efd87",
+  "digest": "gbTG92KpR56kfS8CaBqrGLsJR1Y8cKfq54GmZdmr9Bk",
+  "gasMist": "1988000",
+  "results": [
+    {
+      "check": "402 lists Base + Sui options",
+      "pass": true,
+      "detail": "{\"scheme\":\"exact\",\"network\":\"sui:testnet\",\"amount\":\"3000000\",\"asset\":\"0x2::sui::SUI\",\"payTo\":\"0xc710d9e0cf28b1aa6fd13a2470997345ff246563f587113e59d113313d7efd87\",\"maxTimeoutSeconds\":300,\"extra\":{}}"
+    },
+    {
+      "check": "paid call -> 200 with data",
+      "pass": true,
+      "detail": "status 200, USD mean 129.91 (2026-10-09)"
+    },
+    {
+      "check": "PAYMENT-RESPONSE carries a settled digest",
+      "pass": true,
+      "detail": "gbTG92KpR56kfS8CaBqrGLsJR1Y8cKfq54GmZdmr9Bk"
+    },
+    {
+      "check": "on-chain: payTo credited exactly the price",
+      "pass": true,
+      "detail": "+3000000 MIST"
+    },
+    {
+      "check": "payTo balance rose by the price",
+      "pass": true,
+      "detail": "2003000000 -> 2006000000"
+    },
+    {
+      "check": "payer paid price + own gas only",
+      "pass": true,
+      "detail": "gas 1988000 MIST (0.001988 SUI)"
+    },
+    {
+      "check": "replay of a spent payment -> 402",
+      "pass": true,
+      "detail": "invalid_transaction_state"
+    },
+    {
+      "check": "underpayment -> 402",
+      "pass": true,
+      "detail": "insufficient_funds"
+    },
+    {
+      "check": "payment to another address -> 402",
+      "pass": true,
+      "detail": "invalid_exact_sui_payload_recipient_mismatch"
+    },
+    {
+      "check": "bad request -> 400 and the payment is not settled",
+      "pass": true,
+      "detail": "payTo still 2006000000"
+    }
+  ]
+}

@@ -87,3 +87,37 @@ See [SECURITY.md](SECURITY.md) for the attack pass on every route.
 ## Licence
 
 MIT, copyright 2026 LamuLabs. See [LICENSE](LICENSE).
+
+## Optional: pay the FX routes in USDC on Sui
+
+`GET /v1/fx/kes` and `GET /v1/fx/convert` can also be paid with the x402 `exact` scheme on Sui
+([scheme spec](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_sui.md)).
+When `SUI_X402_PAY_TO` is set, every 402 on those routes lists two options: USDC on Base (unchanged, CDP
+facilitator, Bazaar) and Circle USDC on Sui. Document routes stay Base-only.
+
+- **Non-custodial.** The buyer signs a complete Sui transaction that pays `payTo` directly. The facilitator
+  ([sui-x402-facilitator](https://github.com/DrVelvetFog/sui-x402-facilitator), Apache-2.0, third-party) can only
+  simulate it (`/verify`) or broadcast it unchanged (`/settle`). This server holds no Sui key.
+- **Our terms only.** A payment whose `accepted` amount, asset, network or `payTo` differs from ours is refused
+  before the facilitator is called. Errors (4xx/5xx) are never settled, same as on Base.
+- **Buyer pays Sui gas** (measured on testnet: 0.001988 SUI per payment). No facilitator fee.
+- Not listed on the CDP Bazaar (Bazaar indexes Base/Solana payments only).
+
+| env | default | |
+|---|---|---|
+| `SUI_X402_PAY_TO` | unset (Sui off) | public Sui address, 0x + 64 hex. Receive only, never a key |
+| `SUI_X402_NETWORK` | `sui:testnet` | `sui:mainnet` in production (enforced) |
+| `SUI_X402_FACILITATOR_URL` | `https://sui-facilitator.onrender.com` | any facilitator with `/verify` + `/settle` |
+| `SUI_X402_ASSET` | Circle USDC for the network | `0x2::sui::SUI` allowed on testnet only |
+| `SUI_X402_FIXED_AMOUNT` | unset | atomic amount, required for testnet SUI |
+
+Live testnet end-to-end check (throwaway faucet-funded testnet key, read from a file and never printed):
+
+```sh
+SUI_TESTNET_PAYER_KEY_FILE=/path/testnet.key SUI_X402_PAY_TO=0x... npx tsx scripts/sui-testnet-e2e.ts
+```
+
+It runs 10 checks against the live facilitator on Sui testnet: 402 lists both rails, paid call returns data and a
+settlement digest, on-chain recompute shows `payTo` credited exactly the price, replay, underpayment and
+wrong-recipient payments are refused, and a bad request is answered 400 without settling. Last result:
+`scripts/sui-testnet-e2e.last.json`.

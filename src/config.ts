@@ -3,6 +3,7 @@
  * This is the only file that touches process.env.
  */
 import { z } from "zod";
+import { SUI_ADDRESS, SUI_NATIVE, SUI_NETWORKS, SUI_USDC, type SuiPaymentConfig } from "./payments/sui.js";
 
 export const NETWORKS = {
   baseMainnet: "eip155:8453",
@@ -27,6 +28,14 @@ const envSchema = z.object({
   VERCEL_ENV: z.string().optional(),
   /** Set by Vercel, e.g. "mpesa-kra-parser.vercel.app". Gives GET routes a canonical, query-free resource URL. */
   VERCEL_PROJECT_PRODUCTION_URL: z.string().regex(/^[a-z0-9.-]+$/).optional(),
+  /** Optional Sui rail for the FX routes. Unset = Sui off. Public receive address only, never a key. */
+  SUI_X402_PAY_TO: z.string().trim().toLowerCase().regex(SUI_ADDRESS, "must be a 0x-prefixed 64-hex Sui address").optional(),
+  SUI_X402_NETWORK: z.enum([SUI_NETWORKS.mainnet, SUI_NETWORKS.testnet]).default(SUI_NETWORKS.testnet),
+  SUI_X402_FACILITATOR_URL: z.string().url().startsWith("https://").default("https://sui-facilitator.onrender.com"),
+  /** Coin type; defaults to Circle USDC on the chosen network. 0x2::sui::SUI is testnet-only. */
+  SUI_X402_ASSET: z.string().optional(),
+  /** Atomic amount per call, required only for a non-USDC (testnet SUI) asset. */
+  SUI_X402_FIXED_AMOUNT: z.string().regex(/^[1-9]\d{0,18}$/).optional(),
 });
 
 export type AppConfig = {
@@ -36,6 +45,8 @@ export type AppConfig = {
   port: number;
   /** https origin used as the canonical resource URL, when known. */
   publicOrigin?: string;
+  /** Present only when SUI_X402_PAY_TO is set. */
+  sui?: SuiPaymentConfig;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -56,7 +67,22 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error("X402_FACILITATOR=cdp needs CDP_API_KEY_ID and CDP_API_KEY_SECRET.");
   }
 
+  let sui: SuiPaymentConfig | undefined;
+  if (e.SUI_X402_PAY_TO) {
+    const asset = e.SUI_X402_ASSET ?? SUI_USDC[e.SUI_X402_NETWORK];
+    const isUsdc = asset === SUI_USDC[e.SUI_X402_NETWORK];
+    if (!isUsdc && !(asset === SUI_NATIVE && e.SUI_X402_NETWORK === SUI_NETWORKS.testnet)) {
+      throw new Error("SUI_X402_ASSET must be Circle USDC for the network (0x2::sui::SUI is allowed on sui:testnet only).");
+    }
+    if (!isUsdc && !e.SUI_X402_FIXED_AMOUNT) throw new Error("SUI_X402_FIXED_AMOUNT is required when SUI_X402_ASSET is not USDC.");
+    if (e.VERCEL_ENV === "production" && (e.SUI_X402_NETWORK !== SUI_NETWORKS.mainnet || !isUsdc)) {
+      throw new Error("Vercel production may only offer Sui as USDC on sui:mainnet.");
+    }
+    sui = { network: e.SUI_X402_NETWORK, payTo: e.SUI_X402_PAY_TO, facilitatorUrl: e.SUI_X402_FACILITATOR_URL, asset, ...(isUsdc ? {} : { fixedAmount: e.SUI_X402_FIXED_AMOUNT }) };
+  }
+
   return {
+    sui,
     facilitator: e.X402_FACILITATOR,
     network: e.X402_NETWORK,
     payTo: e.X402_PAY_TO as `0x${string}`,

@@ -12,12 +12,20 @@ import { bazaarResourceServerExtension } from "@x402/extensions/bazaar";
 import { paymentMiddleware, paymentMiddlewareFromHTTPServer, x402ResourceServer } from "@x402/hono";
 import type { MiddlewareHandler } from "hono";
 import { NETWORKS, PUBLIC_TESTNET_FACILITATOR_URL, type AppConfig } from "../config.js";
-import { paidRoutes } from "../products.js";
+import { FX_PRODUCTS, paidRoutes } from "../products.js";
+import { withSuiPayments, type SuiFacilitator } from "./sui.js";
 
 export async function createPaymentMiddleware(
   config: AppConfig,
   injectedFacilitator?: FacilitatorClient,
+  injectedSuiFacilitator?: SuiFacilitator,
 ): Promise<MiddlewareHandler> {
+  const base = await createBaseMiddleware(config, injectedFacilitator);
+  // Sui is an optional second rail, FX routes only. Off unless SUI_X402_PAY_TO is set.
+  return config.sui ? withSuiPayments(base, config.sui, Object.values(FX_PRODUCTS), injectedSuiFacilitator) : base;
+}
+
+async function createBaseMiddleware(config: AppConfig, injectedFacilitator?: FacilitatorClient): Promise<MiddlewareHandler> {
   const routes = paidRoutes(config);
 
   if (!injectedFacilitator && config.facilitator === "cdp") {
