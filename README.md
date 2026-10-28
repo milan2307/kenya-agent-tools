@@ -102,6 +102,7 @@ facilitator, Bazaar) and Circle USDC on Sui. Document routes stay Base-only.
   before the facilitator is called. Errors (4xx/5xx) are never settled, same as on Base.
 - **Buyer pays Sui gas** (measured on testnet: 0.001988 SUI per payment). No facilitator fee.
 - Not listed on the CDP Bazaar (Bazaar indexes Base/Solana payments only).
+- Live in production since 2026-10-28 on `sui:mainnet` (Circle USDC) for the FX routes.
 
 | env | default | |
 |---|---|---|
