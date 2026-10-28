@@ -5,7 +5,9 @@
  *  - FX_PRODUCTS: GET CBK Kenya shilling exchange rates and conversion.
  */
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
-import type { RouteConfig } from "@x402/core/server";
+import type { HTTPRequestContext, RouteConfig } from "@x402/core/server";
+import { MAX_BATCH, normalise } from "./phone/normalise.js";
+import { SOURCES as PHONE_SOURCES } from "./phone/plans.js";
 import type { AppConfig } from "./config.js";
 import { CURRENCY_CODES } from "./fx/currencies.js";
 import { ETIMS_INVOICE_OUTPUT, FX_CONVERT_OUTPUT, FX_RATES_OUTPUT, MPESA_STATEMENT_OUTPUT } from "./schema/output-json.js";
@@ -209,10 +211,87 @@ export const FX_PRODUCTS = {
 
 export const ALL_PAID: PaidRoute[] = [...DOCUMENT_PRODUCTS, FX_PRODUCTS.rate, FX_PRODUCTS.convert];
 
+// ---------------------------------------------------------------- East Africa phone & Paybill normaliser
+// Source of truth: https://github.com/milan2307/east-africa-phone-normaliser (src/phone is a vendored copy).
+const PHONE_SERVICE = "East Africa Phone & Paybill Normaliser";
+const PHONE_TAGS = ["kenya", "uganda", "tanzania", "phone-validation", "m-pesa"];
+const PRICE_PER_NUMBER_MICRO_USD = 2000; // $0.002
+
+/** $0.002 x count, exact in USDC's 6 decimals. Unparseable bodies are priced as 1 (then answered 400, never settled). */
+export function phoneBatchPrice(count: number): `$${string}` {
+  const n = Number.isInteger(count) && count >= 1 ? Math.min(count, MAX_BATCH) : 1;
+  const micro = n * PRICE_PER_NUMBER_MICRO_USD;
+  return `$${Math.floor(micro / 1e6)}.${String(micro % 1e6).padStart(6, "0")}`;
+}
+
+const phoneSingleSchema = {
+  type: "object",
+  properties: {
+    number: { type: "string", description: "Phone, Paybill or Till as typed, e.g. 0712 345 678, +256 772 123456, 255754123456, 247247" },
+    country: { type: "string", enum: ["KE", "UG", "TZ"], description: "Country for numbers without a country code. Default KE" },
+    kind: { type: "string", enum: ["auto", "phone", "paybill", "till"], description: "What the input is. Default auto" },
+  },
+  required: ["number"],
+  additionalProperties: false,
+};
+const phoneBatchSchema = {
+  type: "object",
+  properties: {
+    numbers: { type: "array", items: { type: "string" }, minItems: 1, maxItems: MAX_BATCH, description: `1 to ${MAX_BATCH} numbers. Price is $0.002 per number` },
+    country: phoneSingleSchema.properties.country,
+    kind: phoneSingleSchema.properties.kind,
+  },
+  required: ["numbers"],
+  additionalProperties: false,
+};
+const PHONE_EXAMPLE = normalise("0712 345 678");
+
+export type PhoneRoute = { skillId: string; method: "GET" | "POST"; path: string; price: `$${string}` | ((ctx: HTTPRequestContext) => Promise<`$${string}`>); priceLabel: string; description: string; inputSchema: Record<string, unknown>; discovery: ReturnType<typeof declareDiscoveryExtension> };
+
+export const PHONE_PRODUCTS: [PhoneRoute, PhoneRoute] = [
+  {
+    skillId: "ea-phone-normalise",
+    method: "GET",
+    path: "/v1/phone/normalise",
+    price: "$0.002",
+    priceLabel: "$0.002",
+    description:
+      "Normalises one Kenyan, Ugandan or Tanzanian phone number to E.164 and says if it is valid, mobile or landline, and which operator the range is allocated to (Safaricom, Airtel, Telkom, MTN, Vodacom, Yas, Halotel, TTCL...), per the official CA, UCC and TCRA numbering plans. Also format-checks M-PESA Paybill/Till numbers (format only, no registry lookup). Not charged on errors.",
+    inputSchema: phoneSingleSchema,
+    discovery: declareDiscoveryExtension({ input: { number: "0712 345 678", country: "KE" }, inputSchema: phoneSingleSchema, output: { example: PHONE_EXAMPLE } }),
+  },
+  {
+    skillId: "ea-phone-normalise-batch",
+    method: "POST",
+    path: "/v1/phone/normalise/batch",
+    price: async (ctx) => {
+      const body = (await ctx.adapter.getBody?.()) as { numbers?: unknown } | undefined;
+      return phoneBatchPrice(Array.isArray(body?.numbers) ? body.numbers.length : 1);
+    },
+    priceLabel: `$0.002 per number (1-${MAX_BATCH})`,
+    description:
+      `Normalises up to ${MAX_BATCH} Kenyan, Ugandan or Tanzanian phone, Paybill or Till numbers in one call: E.164, validity, mobile/landline and allocated operator per the official CA, UCC and TCRA numbering plans. Price is $0.002 per number in the request. Paybill/Till are format-checked only. Not charged on errors.`,
+    inputSchema: phoneBatchSchema,
+    discovery: declareDiscoveryExtension({ bodyType: "json", input: { numbers: ["0712345678", "+256772123456", "247247"] }, inputSchema: phoneBatchSchema, output: { example: { count: 1, valid_count: 1, results: [PHONE_EXAMPLE] } } }),
+  },
+];
+
 /** x402 route table, shared by the CDP and the generic resource server. */
 export function paidRoutes(config: AppConfig): Record<string, RouteConfig> {
-  return Object.fromEntries(
-    ALL_PAID.map((p) => [
+  return Object.fromEntries([
+    ...PHONE_PRODUCTS.map((p) => [
+      `${p.method} ${p.path}`,
+      {
+        accepts: { scheme: "exact", price: p.price, network: config.network, payTo: config.payTo, maxTimeoutSeconds: 300 },
+        ...(p.method === "GET" && config.publicOrigin ? { resource: `${config.publicOrigin}${p.path}` } : {}),
+        description: p.description,
+        mimeType: "application/json",
+        serviceName: PHONE_SERVICE,
+        tags: PHONE_TAGS,
+        extensions: p.discovery,
+      } satisfies RouteConfig,
+    ] as const),
+    ...ALL_PAID.map((p) => [
       `${p.method} ${p.path}`,
       {
         accepts: { scheme: "exact", price: p.price, network: config.network, payTo: config.payTo, maxTimeoutSeconds: 300 },
@@ -224,14 +303,14 @@ export function paidRoutes(config: AppConfig): Record<string, RouteConfig> {
         tags: p.tags,
         extensions: p.discovery,
       } satisfies RouteConfig,
-    ]),
-  );
+    ] as const),
+  ]);
 }
 
 /** Free, human- and agent-readable catalogue served at GET /. */
 export function catalogue(config: AppConfig) {
   return {
-    name: "Kenya agent tools: M-Pesa & KRA document parser, CBK KES exchange rates",
+    name: "Kenya agent tools: M-Pesa & KRA document parser, CBK KES exchange rates, East Africa phone & Paybill normaliser",
     payment: { protocol: "x402", scheme: "exact", asset: "USDC", network: config.network },
     ...(config.sui
       ? {
@@ -244,7 +323,15 @@ export function catalogue(config: AppConfig) {
         }
       : {}),
     privacy: "Uploaded files are processed in memory and never stored or logged.",
-    routes: ALL_PAID.map((p) => ({ method: p.method, path: p.path, price: p.price, description: p.description, input_schema: p.inputSchema })),
+    routes: [
+      ...ALL_PAID.map((p) => ({ method: p.method, path: p.path, price: p.price as string, description: p.description, input_schema: p.inputSchema })),
+      ...PHONE_PRODUCTS.map((p) => ({ method: p.method, path: p.path, price: p.priceLabel, description: p.description, input_schema: p.inputSchema })),
+    ],
+    phone_sources: Object.values(PHONE_SOURCES),
+    phone_caveats: [
+      "Network = operator the number range is allocated to in the official plan. Numbers can be ported; this is not a live registry or HLR lookup.",
+      "Paybill/Till: format check only (5-7 digits). It does not confirm the business number exists or who owns it.",
+    ],
     errors: {
       400: "invalid_request: body or query does not match the input schema",
       402: "payment required or payment invalid (x402 PAYMENT-REQUIRED header)",

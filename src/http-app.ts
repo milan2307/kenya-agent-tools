@@ -9,7 +9,9 @@ import { secureHeaders } from "hono/secure-headers";
 import type { AppConfig } from "./config.js";
 import { registerDiscoveryRoutes } from "./discovery/routes.js";
 import type { RateStore } from "./fx/rate-store.js";
-import { DOCUMENT_PRODUCTS, FX_PRODUCTS, catalogue } from "./products.js";
+import { DOCUMENT_PRODUCTS, FX_PRODUCTS, PHONE_PRODUCTS, catalogue } from "./products.js";
+import { normalise, normaliseBatch } from "./phone/normalise.js";
+import { phoneBatchSchema, phoneSingleSchema } from "./schema/phone-input.js";
 import { convertQuerySchema, rateQuerySchema } from "./schema/fx-input.js";
 import { MAX_BODY_BYTES, parseRequestSchema } from "./schema/input.js";
 import { FxError, ParseError } from "./services/errors.js";
@@ -54,6 +56,17 @@ export function createApp(config: AppConfig, payment: MiddlewareHandler, deps: A
 
   app.get(FX_PRODUCTS.rate.path, async (c) => c.json(await getKesRates(query(c, rateQuerySchema), deps.rateStore())));
   app.get(FX_PRODUCTS.convert.path, async (c) => c.json(await convertAmount(query(c, convertQuerySchema), deps.rateStore())));
+
+  app.get(PHONE_PRODUCTS[0].path, (c) => {
+    const q = phoneSingleSchema.safeParse(c.req.query());
+    if (!q.success) return c.json(errorBody("invalid_request", q.error.issues.map((i) => `${i.path.join(".") || "query"}: ${i.message}`).join("; ")), 400);
+    return c.json(normalise(q.data.number, { defaultCountry: q.data.country, kind: q.data.kind }));
+  });
+  app.post(PHONE_PRODUCTS[1].path, async (c) => {
+    const b = phoneBatchSchema.safeParse(await c.req.json().catch(() => undefined));
+    if (!b.success) return c.json(errorBody("invalid_request", b.error.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).join("; ")), 400);
+    return c.json(normaliseBatch(b.data.numbers, { defaultCountry: b.data.country, kind: b.data.kind }));
+  });
 
   app.onError((err, c) => {
     if (err instanceof ParseError || err instanceof FxError) return c.json(errorBody(err.code, err.message), err.status);

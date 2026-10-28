@@ -19,6 +19,8 @@ describe("free routes", () => {
       ["POST", "/v1/parse/etims-invoice", "$0.05"],
       ["GET", "/v1/fx/kes", "$0.003"],
       ["GET", "/v1/fx/convert", "$0.003"],
+      ["GET", "/v1/phone/normalise", "$0.002"],
+      ["POST", "/v1/phone/normalise/batch", "$0.002 per number (1-100)"],
     ]);
     expect(JSON.stringify(body)).not.toMatch(/secret|api_key|private/i);
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");

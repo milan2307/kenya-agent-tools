@@ -121,3 +121,10 @@ It runs 10 checks against the live facilitator on Sui testnet: 402 lists both ra
 settlement digest, on-chain recompute shows `payTo` credited exactly the price, replay, underpayment and
 wrong-recipient payments are refused, and a bad request is answered 400 without settling. Last result:
 `scripts/sui-testnet-e2e.last.json`.
+
+## East Africa phone & Paybill normaliser
+
+`GET /v1/phone/normalise?number=...` ($0.002) and `POST /v1/phone/normalise/batch` ($0.002 per number, 1 to 100):
+E.164, validity, mobile/landline and allocated operator for Kenyan, Ugandan and Tanzanian numbers from the official
+CA, UCC and TCRA numbering plans; M-PESA Paybill/Till are format-checked only (no registry lookup). Source, sources
+and caveats: https://github.com/milan2307/east-africa-phone-normaliser (`src/phone` here is a vendored copy).
